@@ -18,7 +18,9 @@ class IsotopePattern(object):
     Stores information about isotopic peaks of a molecule.
 
     Example of usage:
-    .. code-block:: python
+    .. highlight:: python
+
+    ::
 
         p = IsotopePattern("C5H5N5O").charged(1)
         print p.centroids(resolution=200000).trimmed(5)
