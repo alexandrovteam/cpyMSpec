@@ -22,7 +22,6 @@ for mod_name in MOCK_MODULES:
 
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.viewcode']
 
-templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
 
@@ -33,5 +32,3 @@ release = '0.0.1'
 
 exclude_patterns = ['_build']
 pygments_style = 'sphinx'
-
-html_static_path = ['_static']
