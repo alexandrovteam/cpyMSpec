@@ -6,19 +6,18 @@ ffi = cffi.FFI()
 ffi.cdef(open(full_filename("ims.h")).read())
 ims = ffi.dlopen(full_filename(shared_lib("ms_cffi")))
 
-def raise_ims_exception():
+def _raise_ims_exception():
     raise Exception(ffi.string(ims.ims_strerror()))
 
-def raise_ims_exception_if_null(arg):
+def _raise_ims_exception_if_null(arg):
     if arg == ffi.NULL:
-        raise_ims_exception()
+        _raise_ims_exception()
 
 class IsotopePattern(object):
     """
     Stores information about isotopic peaks of a molecule.
 
     Example of usage:
-    .. highlight:: python
 
     ::
 
@@ -37,7 +36,7 @@ class IsotopePattern(object):
         results (for each of the distinct atomic species)
         """
         p = ims.isotope_pattern_new_from_sf(sum_formula, threshold, fft_threshold)
-        raise_ims_exception_if_null(p)
+        _raise_ims_exception_if_null(p)
         self.ptr = ffi.gc(p, ims.isotope_pattern_free)
 
     def __str__(self):
@@ -71,7 +70,7 @@ class IsotopePattern(object):
         obj = object.__new__(IsotopePattern)
         centroids = ims.isotope_pattern_centroids(self.ptr, resolution,
                                                   min_abundance, points_per_fwhm)
-        raise_ims_exception_if_null(centroids)
+        _raise_ims_exception_if_null(centroids)
         obj.ptr = ffi.gc(centroids, ims.isotope_pattern_free)
         return obj
 

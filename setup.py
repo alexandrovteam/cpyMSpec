@@ -9,16 +9,20 @@ import sys
 sys.path.insert(0, "cpyMSpec")
 from utils import shared_lib
 
+rtd = os.environ.get('READTHEDOCS', None) == 'True'
+
 shared_lib_filename = shared_lib('ms_cffi')
 
-# I couldn't make setup() to copy files in a non-trivial way, is it possible?
 extra_files = {
-    os.path.join('ims-cpp', 'build', shared_lib_filename):
-    os.path.join('cpyMSpec', shared_lib_filename),
-
     os.path.join('ims-cpp', 'cffi', 'ims.h'):
     os.path.join('cpyMSpec', 'ims.h')
 }
+
+if not rtd:
+    extra_files.update({
+        os.path.join('ims-cpp', 'build', shared_lib_filename):
+        os.path.join('cpyMSpec', shared_lib_filename)
+    })
 
 for src, dst in extra_files.items():
     copyfile(src, dst)
@@ -37,7 +41,7 @@ setup(
     install_requires=['cffi>=1.0'],
 
     # force bdist_wheel to believe it's a platform-specific wheel
-    ext_modules=[Extension('cpyMSpec._dummy', sources=['dummy.c'])],
+    ext_modules=[] if rtd else [Extension('cpyMSpec._dummy', sources=['dummy.c'])],
 
     classifiers=[
         'Development Status :: 1 - Planning',
@@ -46,6 +50,3 @@ setup(
         'Topic :: Scientific/Engineering :: Bio-Informatics',
     ]
 )
-
-for dst in extra_files.values():
-    os.remove(dst)
