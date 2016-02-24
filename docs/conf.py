@@ -27,8 +27,10 @@ master_doc = 'index'
 
 project = u'cpyMSpec'
 copyright = u'2016, Alexandrov Team'
-version = '0.0.1'
-release = '0.0.1'
+
+sys.path.insert(0, '../cpyMSpec')
+from utils import VERSION
+version = release = VERSION
 
 exclude_patterns = ['_build']
 pygments_style = 'sphinx'

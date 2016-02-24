@@ -7,7 +7,7 @@ import os
 
 import sys
 sys.path.insert(0, "cpyMSpec")
-from utils import shared_lib
+from utils import shared_lib, VERSION
 
 rtd = os.environ.get('READTHEDOCS', None) == 'True'
 
@@ -29,7 +29,7 @@ for src, dst in extra_files.items():
 
 setup(
     name='cpyMSpec',
-    version='0.0.1',
+    version=VERSION,
     author='Artem Tarasov',
     author_email='artem.tarasov@embl.de',
     url='https://github.com/alexandrovteam/cpyMSpec',
