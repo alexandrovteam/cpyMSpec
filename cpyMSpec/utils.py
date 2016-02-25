@@ -8,4 +8,4 @@ def shared_lib(name):
     suffixes = {'Windows': 'dll', 'Linux': 'so', 'Darwin': 'dylib'}
     return 'lib' + name + '.' + suffixes[platform.system()]
 
-VERSION="0.0.3"
+VERSION="0.0.4"

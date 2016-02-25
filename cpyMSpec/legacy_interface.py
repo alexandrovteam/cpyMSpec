@@ -24,7 +24,7 @@ def complete_isodist(sf, sigma=0.001, cutoff_perc=0.1, charge=None, pts_per_mz=1
     intensities = p.envelope(resolution)(mzs * abs_charge)
 
     ms = MassSpectrum()
-    ms.add_spectrum(mzs, intensities)
+    ms.add_spectrum(np.asarray(mzs), np.asarray(intensities) * 100.0)
 
     p = centroidize(mzs, intensities, 5)
     mzs, intensities = np.asarray(p.masses), 100.0 * np.asarray(p.abundances)
