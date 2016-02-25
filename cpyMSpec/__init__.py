@@ -2,9 +2,41 @@ import cffi
 
 from .utils import shared_lib, full_filename
 
+import numbers
+
+try:
+    import numpy as np
+    _has_numpy = True
+    _dtypes = {'f': np.float32, 'd': np.float64}
+except:
+    _has_numpy = False
+
+_full_types = {'f': 'float', 'd': 'double'}
+
+def _as_buffer(array, numtype):
+    if _has_numpy:
+        return np.asarray(array, dtype=_dtypes[numtype])
+    else:
+        import array
+        a = array.array(numtype)
+        a.extend(array)
+        return a
+
 ffi = cffi.FFI()
 ffi.cdef(open(full_filename("ims.h")).read())
 ims = ffi.dlopen(full_filename(shared_lib("ms_cffi")))
+
+class _cffi_buffer(object):
+    def __init__(self, n, numtype):
+        if _has_numpy:
+            self.buf = np.zeros(n, dtype=_dtypes[numtype])
+            self.ptr = ffi.cast('void *', self.buf.__array_interface__['data'][0])
+        else:
+            self.buf = None
+            self.ptr = ffi.new(_full_types[numtype] + "[]", n)
+
+    def python_data(self):
+        return self.buf if _has_numpy else list(self.ptr)
 
 def _raise_ims_exception():
     raise Exception(ffi.string(ims.ims_strerror()))
@@ -156,5 +188,35 @@ class IsotopePattern(object):
 
         """
         def envelopeFunc(mz):
-            return ims.isotope_pattern_envelope(self.ptr, resolution, mz)
+            if isinstance(mz, numbers.Number):
+                return ims.isotope_pattern_envelope(self.ptr, resolution, mz)
+            mzs = _as_buffer(mz, 'd')
+            ptr = ffi.from_buffer(mzs)
+            n = len(mz)
+            buf = _cffi_buffer(n, 'f')
+            ims.isotope_pattern_envelope_plot(self.ptr, resolution, ptr, n, buf.ptr)
+            return buf.python_data()
+
         return envelopeFunc
+
+
+def centroidize(mzs, intensities, window_size=5):
+    """
+    Detects peaks in raw data.
+
+    :param mzs: sorted array of m/z values
+    :param intensities: array of corresponding intensities
+    :param window_size: size of m/z averaging window
+
+    :returns: isotope pattern containing the centroids
+    :rtype: IsotopePattern
+    """
+    assert len(mzs) == len(intensities)
+    obj = object.__new__(IsotopePattern)
+    n = len(mzs)
+    mzs = ffi.from_buffer(_as_buffer(mzs, 'd'))
+    ints = ffi.from_buffer(_as_buffer(intensities, 'f'))
+    p = ims.isotope_pattern_new_from_raw(n, mzs, ints, window_size)
+    _raise_ims_exception_if_null(p)
+    obj.ptr = ffi.gc(p, ims.isotope_pattern_free)
+    return obj
