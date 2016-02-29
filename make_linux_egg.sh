@@ -1,7 +1,7 @@
 #/usr/bin/env bash
 
 mnt="/code"
-build_cmd="cd $mnt/build && cmake -DCMAKE_BUILD_TYPE=Release .. && make ms_cffi"
+build_cmd="cd $mnt/build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -B -j8 ms_cffi"
 image=devtoolset-3
 
 cd ims-cpp && docker build -t $image . && mkdir -p build &&\
