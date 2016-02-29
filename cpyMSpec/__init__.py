@@ -4,6 +4,10 @@ from .utils import shared_lib, full_filename
 
 import numbers
 
+ffi = cffi.FFI()
+ffi.cdef(open(full_filename("ims.h")).read())
+ims = ffi.dlopen(full_filename(shared_lib("ms_cffi")))
+
 try:
     import numpy as np
     _has_numpy = True
@@ -21,10 +25,6 @@ def _as_buffer(array, numtype):
         a = make_array(numtype)
         a.extend(array)
         return a
-
-ffi = cffi.FFI()
-ffi.cdef(open(full_filename("ims.h")).read())
-ims = ffi.dlopen(full_filename(shared_lib("ms_cffi")))
 
 class _cffi_buffer(object):
     def __init__(self, n, numtype):
@@ -196,7 +196,7 @@ class IsotopePattern(object):
             buf = _cffi_buffer(n, 'f')
             ret = ims.isotope_pattern_envelope_plot(self.ptr, resolution, ptr, n, buf.ptr)
             if ret < 0:
-              _raise_ims_exception()
+                _raise_ims_exception()
             return buf.python_data()
 
         return envelopeFunc
