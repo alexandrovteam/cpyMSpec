@@ -17,8 +17,8 @@ def _as_buffer(array, numtype):
     if _has_numpy:
         return np.asarray(array, dtype=_dtypes[numtype])
     else:
-        import array
-        a = array.array(numtype)
+        from array import array as make_array
+        a = make_array(numtype)
         a.extend(array)
         return a
 
@@ -194,7 +194,9 @@ class IsotopePattern(object):
             ptr = ffi.from_buffer(mzs)
             n = len(mz)
             buf = _cffi_buffer(n, 'f')
-            ims.isotope_pattern_envelope_plot(self.ptr, resolution, ptr, n, buf.ptr)
+            ret = ims.isotope_pattern_envelope_plot(self.ptr, resolution, ptr, n, buf.ptr)
+            if ret < 0:
+              _raise_ims_exception()
             return buf.python_data()
 
         return envelopeFunc
