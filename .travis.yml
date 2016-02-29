@@ -8,6 +8,9 @@ os:
 
 cache:
     apt: true
+    pip: true
+
+sudo: false
 
 addons:
     apt:
@@ -16,25 +19,15 @@ addons:
         packages:
             - gcc-5
             - g++-5
-            - cmake
             - libfftw3-dev
 
 before_install:
-    - if [ $TRAVIS_OS_NAME == "linux" ]; then
-        export CC="gcc-5";
-        export CXX="g++-5";
-        export LINK="gcc-5";
-        export LINKXX="g++-5";
-      fi
-    - $CC --version
-    - $CXX --version
-    - pip install --upgrade pip
     - pip install cffi
 
 before_script:
     - mkdir -p ims-cpp/build
     - cd ims-cpp/build
-    - cmake ..
+    - cmake -DCMAKE_C_COMPILER='gcc-5' -DCMAKE_CXX_COMPILER='g++-5' ..
     - make ms_cffi
     - cd ../../
     - python setup.py build_egg
