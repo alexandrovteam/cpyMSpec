@@ -27,9 +27,7 @@ before_install:
 before_script:
     - mkdir -p ims-cpp/build
     - cd ims-cpp/build
-    - if [ "$CC"  == "gcc" ]; then export CC=gcc-5; fi
-    - if [ "$CXX" == "g++" ]; then export CXX=g++-5; fi
-    - cmake ..
+    - CC=gcc-5 CXX=g++-5 cmake -DCMAKE_C_COMPILER=gcc-5 -DCMAKE_CXX_COMPILER=g++-5 ..
     - make ms_cffi
     - cd ../../
     - python setup.py build_egg
