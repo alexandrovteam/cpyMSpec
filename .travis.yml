@@ -7,7 +7,6 @@ os:
     - linux
 
 cache:
-    apt: true
     pip: true
 
 sudo: false
@@ -16,10 +15,11 @@ addons:
     apt:
         sources:
             - ubuntu-toolchain-r-test
+            - kalakris-cmake
         packages:
-            - gcc-5
             - g++-5
             - libfftw3-dev
+            - cmake
 
 before_install:
     - pip install cffi
@@ -27,7 +27,9 @@ before_install:
 before_script:
     - mkdir -p ims-cpp/build
     - cd ims-cpp/build
-    - cmake -DCMAKE_C_COMPILER='gcc-5' -DCMAKE_CXX_COMPILER='g++-5' ..
+    - if [ "$CC"  == "gcc" ]; then export CC=gcc-5; fi
+    - if [ "$CXX" == "g++" ]; then export CXX=g++-5; fi
+    - cmake ..
     - make ms_cffi
     - cd ../../
     - python setup.py build_egg
