@@ -1,0 +1,46 @@
+language: python
+
+python:
+    - "2.7"
+
+os:
+    - linux
+
+cache:
+    apt: true
+
+addons:
+    apt:
+        sources:
+            - ubuntu-toolchain-r-test
+        packages:
+            - gcc-5
+            - g++-5
+            - cmake
+            - libfftw3-dev
+
+before_install:
+    - if [ $TRAVIS_OS_NAME == "linux" ]; then
+        export CC="gcc-5";
+        export CXX="g++-5";
+        export LINK="gcc-5";
+        export LINKXX="g++-5";
+      fi
+    - $CC --version
+    - $CXX --version
+    - pip install --upgrade pip
+    - pip install cffi
+
+before_script:
+    - mkdir -p ims-cpp/build
+    - cd ims-cpp/build
+    - cmake ..
+    - make ms_cffi
+
+install:
+    - python setup.py build_egg
+    - 'easy_install -U dist/*.egg'
+
+script:
+    - cd test
+    - py.test
