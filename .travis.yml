@@ -36,11 +36,9 @@ before_script:
     - cd ims-cpp/build
     - cmake ..
     - make ms_cffi
-
-install:
+    - cd ../../
     - python setup.py build_egg
     - 'easy_install -U dist/*.egg'
 
 script:
-    - cd test
-    - py.test
+    - py.test test/
