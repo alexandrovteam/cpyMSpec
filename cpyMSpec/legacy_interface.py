@@ -1,9 +1,9 @@
 from cpyMSpec import IsotopePattern, centroidize
 
-# layer of compatibility with the original pyMS.pyisocalc module
+# layer of compatibility with the original pyMSpec.pyisocalc module
 
-from pyMS.pyisocalc import pyisocalc
-from pyMS.mass_spectrum import MassSpectrum
+from pyMSpec.pyisocalc import pyisocalc
+from pyMSpec.mass_spectrum import MassSpectrum
 
 import numpy as np
 
