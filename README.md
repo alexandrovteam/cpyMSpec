@@ -4,9 +4,9 @@ Routines for computing theoretical isotope patterns of small molecules.
 
 ## Installation
 
-Binary builds are provided for convenience, use 
-- `easy_install cpyMSpec` on Linux
-- `pip install cpyMSpec` on OS X.
+Binary builds are provided for convenience, use
+- `pip install cpyMSpec`
+(you might have to upgrade pip first)
 
 If it didn't work for you or you have security concerns, here's how to install the package from source:
 - Install `cmake` and a recent version of `g++`, preferably 5.3
