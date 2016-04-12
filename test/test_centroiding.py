@@ -17,7 +17,7 @@ formulas = ["C5H8O13Cl", "C3H5O7", "Fe2Cl3K5H7", "C44H28O32K", "C18Cl5Na3H22"]
 @pytest.mark.parametrize("f", formulas)
 @pytest.mark.parametrize("resolution", [10000, 30000, 50000, 80000, 100000])
 def test_centroiding(f, resolution):
-    p = IsotopePattern(f)
+    p = IsotopePattern(f, threshold=1e-7)
     p1 = p.centroids(resolution, points_per_fwhm=500)
     min_mz = min(p1.masses)
     max_mz = max(p1.masses)
