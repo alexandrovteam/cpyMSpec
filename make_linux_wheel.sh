@@ -1,12 +1,16 @@
 #/usr/bin/env bash
 
 mnt="/code"
-build_cmd="cd $mnt/build && cmake -DCMAKE_BUILD_TYPE=Release .. && make -B -j8 ms_cffi"
+build_cmd="
+cd $mnt/ims-cpp/build &&\
+cmake -DCMAKE_BUILD_TYPE=Release .. &&\
+make -B -j8 ms_cffi && cd $mnt && rm -r dist/*;
+source activate py2; python setup.py bdist_wheel;
+source activate py3; auditwheel repair dist/cpyMSpec*.whl
+"
+
 image=devtoolset-3
 
-cd ims-cpp && docker build -t $image . && mkdir -p build &&\
+docker build -t $image ims-cpp && mkdir -p ims-cpp/build &&\
     echo $build_cmd &&\
-    docker run -v `pwd`:$mnt $image /bin/bash -c "$build_cmd" &&\
-    cd .. && rm dist/*.whl &&\
-    python2 setup.py bdist_wheel &&\
-    auditwheel repair dist/*.whl
+    docker run -v `pwd`:$mnt $image /bin/bash -c "$build_cmd"
