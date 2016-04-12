@@ -15,11 +15,12 @@ addons:
     apt:
         sources:
             - ubuntu-toolchain-r-test
-            - kalakris-cmake
+            - george-edison55-precise-backports
         packages:
+            - cmake
+            - cmake-data
             - g++-5
             - libfftw3-dev
-            - cmake
 
 before_install:
     - pip install cffi
