@@ -12,3 +12,8 @@ If it didn't work for you or you have security concerns, here's how to install t
   - OS X: `brew install gcc5`
   - Ubuntu: install `gcc-5` package from `ubuntu-toolchain-r` PPA
 - Run `./make_osx_wheel.sh` or `./make_linux_wheel.sh` and install whatever has been created in the `dist/` directory using `pip`
+
+
+## License
+
+This project is licensed under Apache 2.0 license.
