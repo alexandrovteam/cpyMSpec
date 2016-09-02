@@ -1,4 +1,4 @@
-from cpyMSpec import IsotopePattern, centroidize
+from cpyMSpec import isotopePattern, centroidize
 
 # layer of compatibility with the original pyMSpec.pyisocalc module
 
@@ -14,7 +14,7 @@ def complete_isodist(sf, sigma=0.001, cutoff_perc=0.1, charge=None, pts_per_mz=1
     cutoff = cutoff_perc / 100.0
     fwhm = sigma * 2.3548200450309493  # the exact ratio is 2 \sqrt{2 \log 2}
     abs_charge = max(1, abs(charge))
-    p = IsotopePattern(str(sf), cutoff / 10.0).charged(charge)
+    p = isotopePattern(str(sf), cutoff / 10.0).charged(charge)
 
     mz = min(p.masses) / abs_charge
     resolution = mz / fwhm
@@ -28,9 +28,8 @@ def complete_isodist(sf, sigma=0.001, cutoff_perc=0.1, charge=None, pts_per_mz=1
     ms.add_spectrum(mzs, intensities)
 
     p = centroidize(mzs, intensities, 5)
-    mzs, intensities = np.asarray(p.masses), 100.0 * np.asarray(p.abundances)
-    order = np.argsort(mzs)
-    mzs, intensities = mzs[order], intensities[order]
-    retain = intensities > cutoff_perc
-    ms.add_centroids(mzs[retain], intensities[retain])
+    p *= 100
+    p.removeIntensitiesBelow(cutoff_perc)
+    p.sortByMass()
+    ms.add_centroids(p.masses, p.intensities)
     return ms
