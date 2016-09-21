@@ -1,12 +1,9 @@
-import cffi
-
-from .utils import shared_lib, full_filename
+from .utils import init_ffi, load_shared_lib
 
 import numbers
 
-ffi = cffi.FFI()
-ffi.cdef(open(full_filename("ims.h")).read())
-ims = ffi.dlopen(full_filename(shared_lib("ms_cffi")))
+ffi = init_ffi()
+ims = load_shared_lib(ffi)
 
 try:
     import numpy as np
@@ -189,12 +186,6 @@ class TheoreticalSpectrum(SpectrumBase):
     A bag of isotopic peaks computed for a single or multiple sum formulas.
     """
 
-    def envelopeCentroids(self, instrument, min_abundance=1e-4, points_per_fwhm=25):
-        assert self.ptr != ffi.NULL
-        centroids = ims.spectrum_envelope_centroids(self.ptr, instrument.ptr,
-                                                    min_abundance, points_per_fwhm)
-        return _new_spectrum(CentroidedSpectrum, centroids)
-
     def copy(self):
         """
         :returns: a (deep) copy of the instance
@@ -204,15 +195,18 @@ class TheoreticalSpectrum(SpectrumBase):
 
     def centroids(self, instrument, min_abundance=1e-4, points_per_fwhm=25):
         """
-        Estimates centroided peaks at a given resolution.
+        Estimates centroided peaks for a given instrument model.
 
         :param instrument: instrument model
         :param min_abundance: minimum abundance for including a peak
         :param points_per_fwhm: grid density used for envelope calculation
-        :returns: peaks visible at the specified resolution
-        :rtype: Spectrum
+        :returns: peaks visible with the instrument used
+        :rtype: TheoreticalSpectrum
         """
-        return self.envelopeCentroids(instrument, min_abundance, points_per_fwhm)
+        assert self.ptr != ffi.NULL
+        centroids = ims.spectrum_envelope_centroids(self.ptr, instrument.ptr,
+                                                    min_abundance, points_per_fwhm)
+        return _new_spectrum(CentroidedSpectrum, centroids)
 
     def __mul__(self, factor):
         """
@@ -302,7 +296,7 @@ def isotopePattern(sum_formula, threshold=1e-4, fft_threshold=1e-8):
     :type sum_formula: str
     :param threshold: minimal abundance to keep in the final results
     :param fft_threshold: minimal abundance to keep in intermediate
-    results (for each of the distinct atomic species)
+           results (for each of the distinct atomic species)
     """
     s = ims.spectrum_new_from_sf(sum_formula, threshold, fft_threshold)
     return _new_spectrum(TheoreticalSpectrum, s)

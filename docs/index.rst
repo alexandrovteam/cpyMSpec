@@ -4,7 +4,7 @@ cpyMSpec
 .. currentmodule:: cpyMSpec
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
 Fast isotope pattern calculator for small molecules.
 
@@ -13,7 +13,7 @@ Fast isotope pattern calculator for small molecules.
 API Reference
 =============
 
-.. automodule:: cpyMSpec
+.. automodule:: cpyMSpec.spectrum
     :members:
     :undoc-members:
     :show-inheritance:

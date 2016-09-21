@@ -1,6 +1,9 @@
-import os, sys
+import sys
 
 sys.path.insert(0, '../')
+sys.path.insert(0, '../cpyMSpec')
+
+from utils import VERSION
 
 class Mock(object):
     def __init__(self, *args, **kwargs):
@@ -16,7 +19,9 @@ class Mock(object):
         else:
             return Mock()
 
-MOCK_MODULES = ['cffi']
+version = release = VERSION
+
+MOCK_MODULES = ['cffi', 'cpyMSpec.utils']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
 
@@ -27,10 +32,6 @@ master_doc = 'index'
 
 project = u'cpyMSpec'
 copyright = u'2016, Alexandrov Team'
-
-sys.path.insert(0, '../cpyMSpec')
-from utils import VERSION
-version = release = VERSION
 
 exclude_patterns = ['_build']
 pygments_style = 'sphinx'
