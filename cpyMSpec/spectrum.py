@@ -30,7 +30,8 @@ class _cffi_buffer(object):
     def __init__(self, n, numtype):
         if _has_numpy:
             self.buf = np.zeros(n, dtype=_dtypes[numtype])
-            self.ptr = ffi.cast('void *', self.buf.__array_interface__['data'][0])
+            self.ptr = ffi.cast(_full_types[numtype] + '*',
+                                self.buf.__array_interface__['data'][0])
         else:
             self.buf = None
             self.ptr = ffi.new(_full_types[numtype] + "[]", n)
@@ -45,17 +46,13 @@ def _raise_ims_exception_if_null(arg):
     if arg == ffi.NULL:
         _raise_ims_exception()
 
-class Spectrum(object):
-    def __init__(self, mzs, intensities):
-        n = len(mzs)
-        assert len(mzs) == len(intensities)
-        mzs = ffi.from_buffer(_as_buffer(mzs, 'd'))
-        intensities = ffi.from_buffer(_as_buffer(intensities, 'd'))
-        p = ims.spectrum_new(n, mzs, intensities)
-        _raise_ims_exception_if_null(p)
-        self.ptr = ffi.gc(p, ims.spectrum_free)
-        self.sortByMass()
+def _new_spectrum(class_, raw_ptr):
+    _raise_ims_exception_if_null(raw_ptr)
+    obj = object.__new__(class_)
+    obj.ptr = ffi.gc(raw_ptr, ims.spectrum_free)
+    return obj
 
+class SpectrumBase(object):
     def sortByMass(self):
         ims.spectrum_sort_by_mass(self.ptr)
 
@@ -68,10 +65,10 @@ class Spectrum(object):
         return obj
 
     def sortedByMass(self):
-        return self._copy(Spectrum.sortByMass)
+        return self._copy(SpectrumBase.sortByMass)
 
     def sortedByIntensity(self):
-        return self._copy(Spectrum.sortByIntensity)
+        return self._copy(SpectrumBase.sortByIntensity)
 
     def __str__(self):
         assert self.ptr != ffi.NULL
@@ -81,38 +78,7 @@ class Spectrum(object):
             ",\n  ".join("{0: >9.4f}: {1: >8.4f}%".format(x[0], x[1] * 100) for x in peaks) +\
             "\n}"
 
-    def envelopeCentroids(self, resolution, min_abundance=1e-4, points_per_fwhm=25):
-        assert self.ptr != ffi.NULL
-        centroids = ims.spectrum_envelope_centroids(self.ptr, resolution,
-                                                    min_abundance, points_per_fwhm)
-        return Spectrum._new(centroids)
-
-    @staticmethod
-    def _new(raw_ptr):
-        _raise_ims_exception_if_null(raw_ptr)
-        obj = object.__new__(Spectrum)
-        obj.ptr = ffi.gc(raw_ptr, ims.spectrum_free)
-        return obj
-
-    def copy(self):
-        """
-        :returns: a (deep) copy of the instance
-        :rtype: Spectrum
-        """
-        return Spectrum._new(ims.spectrum_copy(self.ptr))
-
-    def centroids(self, resolution, min_abundance=1e-4, points_per_fwhm=25):
-        """
-        Estimates centroided peaks at a given resolution.
-
-        :param resolution: peak resolution, i.e. m/z value divided by FWHM
-        :param min_abundance: minimum abundance for including a peak
-        :param points_per_fwhm: grid density used for envelope calculation
-        :returns: peaks visible at the specified resolution
-        :rtype: Spectrum
-        """
-        return self.envelopeCentroids(resolution, min_abundance, points_per_fwhm)
-
+    @property
     def size(self):
         """
         :returns: number of peaks in the spectrum
@@ -126,7 +92,7 @@ class Spectrum(object):
         :returns: peak masses
         :rtype: list of floats
         """
-        buf = ffi.new("double[]", self.size())
+        buf = ffi.new("double[]", self.size)
         ims.spectrum_masses(self.ptr, buf)
         return list(buf)
 
@@ -136,14 +102,9 @@ class Spectrum(object):
         :returns: peak intensities
         :rtype: list of floats
         """
-        buf = ffi.new("double[]", self.size())
+        buf = ffi.new("double[]", self.size)
         ims.spectrum_intensities(self.ptr, buf)
         return list(buf)
-
-    # deprecated
-    @property
-    def abundances(self):
-        return self.intensities
 
     def addCharge(self, charge):
         """
@@ -155,6 +116,104 @@ class Spectrum(object):
         """
         ims.spectrum_add_charge(self.ptr, charge)
 
+    def trim(self, n_peaks):
+        """
+        Sorts mass and intensities arrays in descending intensity order,
+        then removes low-intensity peaks from the spectrum.
+
+        :param n_peaks: number of peaks to keep
+        """
+        self.sortByIntensity()
+        ims.spectrum_trim(self.ptr, n_peaks)
+
+class ProfileSpectrum(SpectrumBase):
+    """
+    Represents profile spectrum data, which means:
+    * neighbor mass differences are supposed to be locally approximately equal;
+    * occasional gaps might be present, indicating zero-intensity regions
+    """
+    def __init__(self, mzs, intensities):
+        n = len(mzs)
+        assert len(mzs) == len(intensities)
+        mzs = ffi.from_buffer(_as_buffer(mzs, 'd'))
+        intensities = ffi.from_buffer(_as_buffer(intensities, 'd'))
+        p = ims.spectrum_new(n, mzs, intensities)
+        _raise_ims_exception_if_null(p)
+        self.ptr = ffi.gc(p, ims.spectrum_free)
+        self.sortByMass()
+
+    def copy(self):
+        """
+        :returns: a (deep) copy of the instance
+        :rtype: ProfileSpectrum
+        """
+        return _new_spectrum(ProfileSpectrum, ims.spectrum_copy(self.ptr))
+
+    def centroids(self, window_size=5):
+        """
+        Detects peaks in raw data.
+
+        :param mzs: sorted array of m/z values
+        :param intensities: array of corresponding intensities
+        :param window_size: size of m/z averaging window
+
+        :returns: isotope pattern containing the centroids
+        :rtype: CentroidedSpectrum
+        """
+        self.sortByMass()
+        mzs = ffi.from_buffer(_as_buffer(self.masses, 'd'))
+        intensities = ffi.from_buffer(_as_buffer(self.intensities, 'f'))
+        n = self.size
+        p = ims.spectrum_new_from_raw(n, mzs, intensities, int(window_size))
+        return _new_spectrum(CentroidedSpectrum, p)
+
+class InstrumentModel(object):
+    def __init__(self, instrument_type, resolving_power, at_mz=200):
+        """
+        :param type: instrument type, must be one of 'orbitrap', 'fticr', 'tof'.
+        :param resolving_power: instrument resolving power
+        :param at_mz: value at which the resolving power is specified
+        """
+        p = ims.instrument_profile_new(instrument_type.lower(), resolving_power, at_mz)
+        _raise_ims_exception_if_null(p)
+        self.ptr = ffi.gc(p, ims.instrument_profile_free)
+
+    def resolvingPowerAt(self, mz):
+        """
+        Calculates resolving power at a given m/z value
+        """
+        return ims.instrument_resolving_power_at(self.ptr, mz)
+
+class TheoreticalSpectrum(SpectrumBase):
+    """
+    A bag of isotopic peaks computed for a single or multiple sum formulas.
+    """
+
+    def envelopeCentroids(self, instrument, min_abundance=1e-4, points_per_fwhm=25):
+        assert self.ptr != ffi.NULL
+        centroids = ims.spectrum_envelope_centroids(self.ptr, instrument.ptr,
+                                                    min_abundance, points_per_fwhm)
+        return _new_spectrum(CentroidedSpectrum, centroids)
+
+    def copy(self):
+        """
+        :returns: a (deep) copy of the instance
+        :rtype: Spectrum
+        """
+        return _new_spectrum(TheoreticalSpectrum, ims.spectrum_copy(self.ptr))
+
+    def centroids(self, instrument, min_abundance=1e-4, points_per_fwhm=25):
+        """
+        Estimates centroided peaks at a given resolution.
+
+        :param instrument: instrument model
+        :param min_abundance: minimum abundance for including a peak
+        :param points_per_fwhm: grid density used for envelope calculation
+        :returns: peaks visible at the specified resolution
+        :rtype: Spectrum
+        """
+        return self.envelopeCentroids(instrument, min_abundance, points_per_fwhm)
+
     def __mul__(self, factor):
         """
         Multiplies all intensities by the factor
@@ -164,11 +223,49 @@ class Spectrum(object):
         return s
 
     def __add__(self, other):
-        if type(other) is not Spectrum:
-            raise TypeError("can't add Spectrum and {}".format(str(type(other))))
+        """
+        Adds two theoretical spectra by simply merging masses and intensities of both.
+        """
+        if type(other) is not TheoreticalSpectrum:
+            raise TypeError("can't add TheoreticalSpectrum and {}".format(str(type(other))))
         s = self.copy()
         ims.spectrum_add_inplace(s.ptr, other.ptr)
         return s
+
+    def envelope(self, instrument):
+        """
+        Computes isotopic envelope for a given instrument model
+
+        :param instrument: instrument model to use
+        :returns: isotopic envelope as a function of mass
+        :rtype: function float(mz: float)
+
+        """
+        def envelopeFunc(mz):
+            if isinstance(mz, numbers.Number):
+                return ims.spectrum_envelope(self.ptr, instrument.ptr, mz)
+            mzs = _as_buffer(mz, 'd')
+            ptr = ffi.cast("double*", ffi.from_buffer(mzs))
+            n = len(mz)
+            buf = _cffi_buffer(n, 'f')
+            ret = ims.spectrum_envelope_plot(self.ptr, instrument.ptr, ptr, n, buf.ptr)
+            if ret < 0:
+                _raise_ims_exception()
+            return buf.python_data()
+
+        return envelopeFunc
+
+class CentroidedSpectrum(SpectrumBase):
+    """
+    Centroided peaks of a profile/theoretical spectrum
+    """
+
+    def copy(self):
+        """
+        :returns: a (deep) copy of the instance
+        :rtype: CentroidedSpectrum
+        """
+        return _new_spectrum(CentroidedSpectrum, ims.spectrum_copy(self.ptr))
 
     def charged(self, charge):
         """
@@ -177,27 +274,18 @@ class Spectrum(object):
         :param charge: number of electrons to add
         :type charge: integer
         :returns: a spectrum with appropriately shifted masses
-        :rtype: Spectrum
+        :rtype: CentroidedSpectrum
 
         """
         result = self.copy()
         result.addCharge(charge)
         return result
 
-    def trim(self, n_peaks):
-        """
-        Removes low-intensity peaks from the spectrum.
-
-        :param n_peaks: number of peaks to keep
-        """
-        self.sortByIntensity()
-        ims.spectrum_trim(self.ptr, n_peaks)
-
     def trimmed(self, n_peaks):
         """
         :param n_peaks: number of peaks to keep
         :returns: an isotope pattern with removed low-intensity peaks
-        :rtype: Spectrum
+        :rtype: CentroidedSpectrum
         """
         result = self.copy()
         result.trim(n_peaks)
@@ -205,29 +293,6 @@ class Spectrum(object):
 
     def removeIntensitiesBelow(self, min_intensity):
         ims.spectrum_trim_intensity(self.ptr, min_intensity)
-
-    def envelope(self, resolution):
-        """
-        Computes isotopic envelope at a specified resolution
-
-        :param resolution: peak resolution
-        :returns: isotopic envelope as a function of mass
-        :rtype: function float(mz: float)
-
-        """
-        def envelopeFunc(mz):
-            if isinstance(mz, numbers.Number):
-                return ims.spectrum_envelope(self.ptr, resolution, mz)
-            mzs = _as_buffer(mz, 'd')
-            ptr = ffi.from_buffer(mzs)
-            n = len(mz)
-            buf = _cffi_buffer(n, 'f')
-            ret = ims.spectrum_envelope_plot(self.ptr, resolution, ptr, n, buf.ptr)
-            if ret < 0:
-                _raise_ims_exception()
-            return buf.python_data()
-
-        return envelopeFunc
 
 def isotopePattern(sum_formula, threshold=1e-4, fft_threshold=1e-8):
     """
@@ -240,25 +305,4 @@ def isotopePattern(sum_formula, threshold=1e-4, fft_threshold=1e-8):
     results (for each of the distinct atomic species)
     """
     s = ims.spectrum_new_from_sf(sum_formula, threshold, fft_threshold)
-    return Spectrum._new(s)
-
-# deprecated
-IsotopePattern = isotopePattern
-
-def centroidize(mzs, intensities, window_size=5):
-    """
-    Detects peaks in raw data.
-
-    :param mzs: sorted array of m/z values
-    :param intensities: array of corresponding intensities
-    :param window_size: size of m/z averaging window
-
-    :returns: isotope pattern containing the centroids
-    :rtype: Spectrum
-    """
-    assert len(mzs) == len(intensities)
-    n = len(mzs)
-    mzs = ffi.from_buffer(_as_buffer(mzs, 'd'))
-    ints = ffi.from_buffer(_as_buffer(intensities, 'f'))
-    p = ims.spectrum_new_from_raw(n, mzs, ints, window_size)
-    return Spectrum._new(p)
+    return _new_spectrum(TheoreticalSpectrum, s)

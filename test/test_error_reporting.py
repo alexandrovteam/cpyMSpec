@@ -1,4 +1,4 @@
-from cpyMSpec import isotopePattern
+from cpyMSpec import isotopePattern, InstrumentModel
 
 import pytest
 
@@ -14,12 +14,12 @@ def test_too_many_combinations():
 
 def test_too_few_points():
     with pytest.raises(Exception):
-        isotopePattern("C2H5OH").centroids(100000, points_per_fwhm=3)
+        isotopePattern("C2H5OH").centroids(InstrumentModel('tof', 100000), points_per_fwhm=3)
 
 def test_invalid_min_abundance():
     with pytest.raises(Exception):
-        isotopePattern("C5H5N5O").centroids(100000, min_abundance=1)
+        isotopePattern("C5H5N5O").centroids(InstrumentModel('tof', 100000), min_abundance=1)
 
 def test_unsorted_envelope_input():
     with pytest.raises(Exception):
-        isotopePattern("C5H7O12").envelope(100000)([3, 1, 2])
+        isotopePattern("C5H7O12").envelope(InstrumentModel('tof', 100000))([3, 1, 2])

@@ -38,7 +38,7 @@ setup(
     packages=find_packages(where='.'),
     package_data={'cpyMSpec': [shared_lib_filename, 'ims.h']},
     setup_requires=['wheel>=0.27.0'],
-    install_requires=['cffi>=1.0'],
+    install_requires=['cffi==1.7'],
 
     # force bdist_wheel to believe it's a platform-specific wheel
     ext_modules=[] if rtd else [Extension('cpyMSpec._dummy', sources=['dummy.c'])],
