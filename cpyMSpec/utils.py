@@ -17,4 +17,4 @@ def init_ffi():
 def load_shared_lib(ffi):
     return ffi.dlopen(full_filename(shared_lib("ms_cffi")))
 
-VERSION = "0.3.2"
+VERSION = "0.3.3"

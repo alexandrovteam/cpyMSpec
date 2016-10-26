@@ -25,16 +25,26 @@ def _as_buffer(array, numtype):
 
 class _cffi_buffer(object):
     def __init__(self, n, numtype):
-        if _has_numpy:
-            self.buf = np.zeros(n, dtype=_dtypes[numtype])
-            self.ptr = ffi.cast(_full_types[numtype] + '*',
-                                self.buf.__array_interface__['data'][0])
+        if isinstance(n, numbers.Number):
+            if _has_numpy:
+                self.buf = np.zeros(n, dtype=_dtypes[numtype])
+                self.ptr = self._get_ptr(numtype)
+            else:
+                self.buf = None
+                self.ptr = ffi.new(_full_types[numtype] + "[]", n)
         else:
-            self.buf = None
-            self.ptr = ffi.new(_full_types[numtype] + "[]", n)
+            self.buf = _as_buffer(n, numtype)
+            self.ptr = self._get_ptr(numtype)
 
     def python_data(self):
         return self.buf if _has_numpy else list(self.ptr)
+
+    def _get_ptr(self, numtype):
+        if _has_numpy:
+            return ffi.cast(_full_types[numtype] + '*',
+                            self.buf.__array_interface__['data'][0])
+        else:
+            return ffi.cast(_full_types[numtype] + '*', self.buf.buffer_info()[0])
 
 def _raise_ims_exception():
     raise Exception(ffi.string(ims.ims_strerror()))
@@ -132,9 +142,9 @@ class ProfileSpectrum(SpectrumBase):
     def __init__(self, mzs, intensities):
         n = len(mzs)
         assert len(mzs) == len(intensities)
-        mzs = ffi.from_buffer(_as_buffer(mzs, 'd'))
-        intensities = ffi.from_buffer(_as_buffer(intensities, 'd'))
-        p = ims.spectrum_new(n, mzs, intensities)
+        mzs = _cffi_buffer(mzs, 'd')
+        intensities = _cffi_buffer(intensities, 'd')
+        p = ims.spectrum_new(n, mzs.ptr, intensities.ptr)
         _raise_ims_exception_if_null(p)
         self.ptr = ffi.gc(p, ims.spectrum_free)
         self.sortByMass()
@@ -158,10 +168,10 @@ class ProfileSpectrum(SpectrumBase):
         :rtype: CentroidedSpectrum
         """
         self.sortByMass()
-        mzs = ffi.from_buffer(_as_buffer(self.masses, 'd'))
-        intensities = ffi.from_buffer(_as_buffer(self.intensities, 'f'))
+        mzs = _cffi_buffer(self.masses, 'd')
+        intensities = _cffi_buffer(self.intensities, 'f')
         n = self.size
-        p = ims.spectrum_new_from_raw(n, mzs, intensities, int(window_size))
+        p = ims.spectrum_new_from_raw(n, mzs.ptr, intensities.ptr, int(window_size))
         return _new_spectrum(CentroidedSpectrum, p)
 
 class InstrumentModel(object):
@@ -238,11 +248,10 @@ class TheoreticalSpectrum(SpectrumBase):
         def envelopeFunc(mz):
             if isinstance(mz, numbers.Number):
                 return ims.spectrum_envelope(self.ptr, instrument.ptr, mz)
-            mzs = _as_buffer(mz, 'd')
-            ptr = ffi.cast("double*", ffi.from_buffer(mzs))
+            mzs = _cffi_buffer(mz, 'd')
             n = len(mz)
             buf = _cffi_buffer(n, 'f')
-            ret = ims.spectrum_envelope_plot(self.ptr, instrument.ptr, ptr, n, buf.ptr)
+            ret = ims.spectrum_envelope_plot(self.ptr, instrument.ptr, mzs.ptr, n, buf.ptr)
             if ret < 0:
                 _raise_ims_exception()
             return buf.python_data()
@@ -298,5 +307,5 @@ def isotopePattern(sum_formula, threshold=1e-4, fft_threshold=1e-8):
     :param fft_threshold: minimal abundance to keep in intermediate
            results (for each of the distinct atomic species)
     """
-    s = ims.spectrum_new_from_sf(sum_formula, threshold, fft_threshold)
+    s = ims.spectrum_new_from_sf(str(sum_formula), threshold, fft_threshold)
     return _new_spectrum(TheoreticalSpectrum, s)
