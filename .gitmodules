@@ -1,3 +1,6 @@
 [submodule "ims-cpp"]
 	path = ims-cpp
 	url = https://github.com/alexandrovteam/ims-cpp
+[submodule "wheel_builders"]
+	path = wheel_builders
+	url = https://github.com/alexandrovteam/wheel_builders.git
