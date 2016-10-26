@@ -40,11 +40,10 @@ setup(
     setup_requires=['wheel>=0.27.0'],
     install_requires=['cffi>=1.7'],
 
-    # force bdist_wheel to believe it's a platform-specific wheel
-    ext_modules=[] if rtd else [Extension('cpyMSpec._dummy', sources=['dummy.c'])],
+    ext_modules=[],
 
     classifiers=[
-        'Development Status :: 1 - Planning',
+        'Development Status :: 3 - Alpha',
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: Apache Software License',
         'Topic :: Scientific/Engineering :: Bio-Informatics',
