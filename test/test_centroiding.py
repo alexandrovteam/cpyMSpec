@@ -3,8 +3,8 @@ from cpyMSpec import isotopePattern, ProfileSpectrum, InstrumentModel
 import pytest
 
 def assert_patterns_almost_equal(p1, p2):
-    peaks1 = zip(p1.masses, p1.intensities)
-    peaks2 = zip(p2.masses, p2.intensities)
+    peaks1 = list(zip(p1.masses, p1.intensities))
+    peaks2 = list(zip(p2.masses, p2.intensities))
     assert_peaks_almost_equal(peaks1[:5], peaks2[:5])
 
 def assert_peaks_almost_equal(peaks1, peaks2):
