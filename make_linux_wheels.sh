@@ -1,13 +1,14 @@
 #/usr/bin/env bash
 
 mnt="/code"
-build_cmd="
-cd $mnt/ims-cpp/build &&\
+build_cmd='
+cd /code/ims-cpp/build &&\
 cmake -DCMAKE_BUILD_TYPE=Release .. &&\
-make -B -j8 ms_cffi && cd $mnt && rm -r dist/*;
+make -B -j8 ms_cffi && cd /code && rm -r dist/*;
 source activate py2; python setup.py bdist_wheel;
-source activate py3; auditwheel repair dist/cpyMSpec*.whl
-"
+source activate py3; python setup.py bdist_wheel;
+source activate py3; for fn in `ls dist/*.whl`; do auditwheel repair $fn; done
+'
 
 image=devtoolset-3
 

@@ -181,7 +181,8 @@ class InstrumentModel(object):
         :param resolving_power: instrument resolving power
         :param at_mz: value at which the resolving power is specified
         """
-        p = ims.instrument_profile_new(instrument_type.lower(), resolving_power, at_mz)
+        p = ims.instrument_profile_new(instrument_type.lower().encode('ascii'),
+                                       resolving_power, at_mz)
         _raise_ims_exception_if_null(p)
         self.ptr = ffi.gc(p, ims.instrument_profile_free)
 
@@ -307,5 +308,6 @@ def isotopePattern(sum_formula, threshold=1e-4, fft_threshold=1e-8):
     :param fft_threshold: minimal abundance to keep in intermediate
            results (for each of the distinct atomic species)
     """
-    s = ims.spectrum_new_from_sf(str(sum_formula), threshold, fft_threshold)
+    s = ims.spectrum_new_from_sf(sum_formula.encode('ascii'),
+                                 threshold, fft_threshold)
     return _new_spectrum(TheoreticalSpectrum, s)
