@@ -21,7 +21,6 @@ addons:
             - cmake
             - cmake-data
             - g++-5
-            - libfftw3-dev
 
 before_install:
     - pip install cffi

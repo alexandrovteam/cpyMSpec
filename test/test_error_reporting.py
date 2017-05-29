@@ -3,7 +3,7 @@ from cpyMSpec import isotopePattern, InstrumentModel
 import pytest
 
 def test_invalid_sum_formula():
-    for sf in ["UnknownElements", "C2HzO3", "C5:H2", "C2(H3O"]:
+    for sf in ["UnknownElements", "C2HzO3", "C5:H2", "C2(H3O", "H2O.2"]:
         with pytest.raises(Exception):
             isotopePattern(sf)
 
@@ -23,3 +23,9 @@ def test_invalid_min_abundance():
 def test_unsorted_envelope_input():
     with pytest.raises(Exception):
         isotopePattern("C5H7O12").envelope(InstrumentModel('tof', 100000))([3, 1, 2])
+
+def test_negative_element_number():
+    with pytest.raises(Exception):
+        isotopePattern('C2HBrClF3+H-H2O')
+    with pytest.raises(Exception):
+        isotopePattern('C2HBrClF3-H2')
