@@ -14,7 +14,7 @@ def complete_isodist(sf, sigma=0.001, cutoff_perc=0.1, charge=None, pts_per_mz=1
     cutoff = cutoff_perc / 100.0
     fwhm = sigma * 2.3548200450309493  # the exact ratio is 2 \sqrt{2 \log 2}
     abs_charge = max(1, abs(charge))
-    p = isotopePattern(str(sf), cutoff / 10.0)
+    p = isotopePattern(str(sf), 0.9999)
     p.addCharge(charge)
 
     mz = min(p.masses) / abs_charge

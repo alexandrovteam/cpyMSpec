@@ -298,16 +298,14 @@ class CentroidedSpectrum(SpectrumBase):
     def removeIntensitiesBelow(self, min_intensity):
         ims.spectrum_trim_intensity(self.ptr, min_intensity)
 
-def isotopePattern(sum_formula, threshold=1e-4, fft_threshold=1e-8):
+def isotopePattern(sum_formula, desired_prob=0.99999):
     """
     Calculates isotopic peaks for a sum formula.
 
     :param sum_formula: text representation of an atomic composition
     :type sum_formula: str
-    :param threshold: minimal abundance to keep in the final results
-    :param fft_threshold: minimal abundance to keep in intermediate
-           results (for each of the distinct atomic species)
+    :param desired_prob: total probability covered by the result
+    :type desired_prob: float
     """
-    s = ims.spectrum_new_from_sf(sum_formula.encode('ascii'),
-                                 threshold, fft_threshold)
+    s = ims.spectrum_new_from_sf(sum_formula.encode('ascii'), desired_prob)
     return _new_spectrum(TheoreticalSpectrum, s)
