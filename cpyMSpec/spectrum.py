@@ -298,24 +298,24 @@ class CentroidedSpectrum(SpectrumBase):
     def removeIntensitiesBelow(self, min_intensity):
         ims.spectrum_trim_intensity(self.ptr, min_intensity)
 
-def isotopePattern(sum_formula, threshold=1e-4, rel_threshold=True, desired_prob=0.99999):
+def isotopePattern(sum_formula, threshold=1e-4, rel_threshold=True, desired_prob=None):
     """
     Calculates isotopic peaks for a sum formula.
 
     :param sum_formula: text representation of an atomic composition
     :type sum_formula: str
-    :param threshold: minimum peak abundance; if nonzero, desired_prob parameter is ignored
+    :param threshold: minimum peak abundance
     :type threshold: float
     :param rel_threshold: if True, threshold is relative to the highest peak, otherwise it is a probability
     :type rel_threshold: bool
-    :param desired_prob: total probability covered by the result
-    :type desired_prob: float
+    :param desired_prob: total probability covered by the result; if set, threshold parameter is ignored
+    :type desired_prob: float | None
     """
     assert threshold >= 0 and threshold < 1
-    assert desired_prob > 0 and desired_prob <= 1
+    assert desired_prob is None or (desired_prob > 0 and desired_prob <= 1)
 
-    if threshold > 0:
-        s = ims.spectrum_new_from_sf_thr(sum_formula.encode('ascii'), threshold, rel_threshold)
-    else:
+    if desired_prob:
         s = ims.spectrum_new_from_sf(sum_formula.encode('ascii'), desired_prob)
+    else:
+        s = ims.spectrum_new_from_sf_thr(sum_formula.encode('ascii'), threshold, rel_threshold)
     return _new_spectrum(TheoreticalSpectrum, s)
